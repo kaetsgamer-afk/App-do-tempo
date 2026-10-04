@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meu App do Tempo</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #00b4db, #0083b0);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 85%;
+      max-width: 320px;
+    }
+
+    .escondido {
+      display: none;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #0083b0;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      width: 100%;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .resultado {
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+
+    .temp-destaque {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #0083b0;
+      margin: 10px 0;
+    }
+
+    .detalhes {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    #icone-clima {
+      width: 60px;
+      height: 60px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TELA 1: BOAS-VINDAS -->
+  <div id="tela-boas-vindas" class="card">
+    <h1>Olá! 👋</h1>
+    <p>Bem-vindo ao seu aplicativo do tempo. Mostre seu crachá para entrar!</p>
+    <button id="botao-entrar">Entrar no App 🎫</button>
+  </div>
+
+  <!-- TELA 2: APP DO TEMPO -->
+  <div id="tela-app" class="card escondido">
+    <h1>Previsão do Tempo</h1>
+
+    <input type="text" id="campo-cidade" placeholder="Digite uma cidade...">
+    <button id="botao-buscar">Buscar Clima</button>
+
+    <div class="resultado">
+      <h2 id="nome-cidade">Digite uma cidade acima</h2>
+      <img id="icone-clima" class="escondido" alt="Ícone do tempo">
+      <div id="texto-temperatura" class="temp-destaque">---</div>
+      <p id="descricao-tempo">---</p>
+      <p id="detalhes-extra" class="detalhes">---</p>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = 'f794fc98d61546462d1188089bb4490d';
+
+    const telaBoasVindas = document.getElementById('tela-boas-vindas');
+    const telaApp = document.getElementById('tela-app');
+    const botaoEntrar = document.getElementById('botao-entrar');
+
+    const campoCidade = document.getElementById('campo-cidade');
+    const botaoBuscar = document.getElementById('botao-buscar');
+    const nomeCidade = document.getElementById('nome-cidade');
+    const textoTemperatura = document.getElementById('texto-temperatura');
+    const descricaoTempo = document.getElementById('descricao-tempo');
+    const detalhesExtra = document.getElementById('detalhes-extra');
+    const iconeClima = document.getElementById('icone-clima');
+
+    // Trocar de tela
+    botaoEntrar.addEventListener('click', function() {
+      telaBoasVindas.classList.add('escondido');
+      telaApp.classList.remove('escondido');
+    });
+
+    // Função de busca real na API
+    async function buscarClimaReal(cidade) {
+      textoTemperatura.innerText = '...';
+      descricaoTempo.innerText = 'Buscando informações...';
+      detalhesExtra.innerText = '';
+      iconeClima.classList.add('escondido');
+
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cidade)}&units=metric&lang=pt_br&appid=${apiKey}`;
+
+      try {
+        const resposta = await fetch(url);
+
+        if (!resposta.ok) {
+          alert('Cidade não encontrada ou chave ainda ativando! Aguarde um momento.');
+          textoTemperatura.innerText = '---';
+          descricaoTempo.innerText = 'Tente novamente em breve.';
+          return;
+        }
+
+        const dados = await resposta.json();
+
+        // 1. Atualiza Nome e País
+        nomeCidade.innerText = `${dados.name}, ${dados.sys.country}`;
+        
+        // 2. Atualiza Temperatura e Descrição
+        textoTemperatura.innerText = `${Math.round(dados.main.temp)}°C`;
+        descricaoTempo.innerText = dados.weather[0].description.toUpperCase();
+        
+        // 3. Atualiza Detalhes (Umidade e Vento)
+        detalhesExtra.innerText = `Umidade: ${dados.main.humidity}% | Vento: ${Math.round(dados.wind.speed * 3.6)} km/h`;
+
+        // 4. Exibe o Ícone correspondente ao clima
+        const codigoIcone = dados.weather[0].icon;
+        iconeClima.src = `https://openweathermap.org/img/wn/${codigoIcone}@2x.png`;
+        iconeClima.classList.remove('escondido');
+
+      } catch (erro) {
+        alert('Erro ao se conectar com a internet.');
+        textoTemperatura.innerText = '---';
+      }
+    }
+
+    // Clique no botão buscar
+    botaoBuscar.addEventListener('click', function() {
+      const cidadeDigitada = campoCidade.value.trim();
+      if (cidadeDigitada !== '') {
+        buscarClimaReal(cidadeDigitada);
+      }
+    });
+
+    // Permitir buscar ao apertar Enter no teclado
+    campoCidade.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const cidadeDigitada = campoCidade.value.trim();
+        if (cidadeDigitada !== '') {
+          buscarClimaReal(cidadeDigitada);
+        }
+      }
+    });
+  </script>
+
+</body>
+    </html>
